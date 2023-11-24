@@ -7,6 +7,8 @@ output:
 
 ```{r load packages, echo=FALSE, message=FALSE}
 library(tidyverse)
+library(plm)
+library(tidyverse)
 ```
 
 
@@ -26,21 +28,147 @@ load(file="./data/driving.RData")
 ## please comment these calls in your work 
 glimpse(data)
 desc
-```
 
+head(desc)
+```
 
 # (30 points, total) Build and Describe the Data 
 
 1. (5 points) Load the data and produce useful features. Specifically: 
-    - Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
-    - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`. 
-    - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series). 
-    - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
+
+- Produce a new variable, called `speed_limit` that re-encodes the data that is in `sl55`, `sl65`, `sl70`, `sl75`, and `slnone`; 
+    
+```{r re-encode speed limit}
+data[data$sl55 == 0.5, 4:6] <- 0
+data[data$sl65 == 0.5, 5:6] <- 0
+
+data$speed_limit <- data %>%
+  pivot_longer(col = sl55:slnone, names_to="speed_limit", names_prefix="sl") %>%
+  filter(value >= 0.5) %>%
+  pull(speed_limit)
+```
+
+- Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`.
+    
+```{r re-encode year}
+data$year_of_observation <- data$year
+```
+
+- Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series).
+
+```{r re-encode bac}
+data <- add_column(data, bacnone = 0, .after = "bac08")
+
+data <- data %>% 
+  mutate(
+    bacnone = ifelse(bac10 == 0 & bac08 == 0, 1, 0),
+    bac10 = ifelse(bac10 > 0 & bac08 == 0, 1, bac10)
+    )
+
+data[data$bac08 == 0.5, "bac10"] <- 0
+
+data$blood_alcohol_level <- data %>%
+  pivot_longer(col = bac10:bacnone, names_to="blood_alcohol_level", names_prefix="bac") %>%
+  filter(value >= 0.5) %>%
+  pull(blood_alcohol_level)
+```
+
+- Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
+
+```{r renaming cols}
+col_name_lookup <- c(
+  "min_drink_age" = "minage",
+  "zero_tol_law" = "zerotol",
+  "grad_driver_law" = "gdl",
+  "per_se_law" = "perse",
+  "total_fatalities" = "totfat",
+  "night_fatalities" = "nghtfat",
+  "weekend_fatalities" = "wkndfat",
+  "total_fatalities_per_100mil_miles" = "totfatpvm",
+  "night_fatalities_per_100mil_miles" = "nghtfatpvm",
+  "weekend_fatalities_per_100mil_miles" = "wkndfatpvm",
+  "state_population" = "statepop",
+  "total_fatalities_rate" = "totfatrte",
+  "night_fatalities_rate" = "nghtfatrte",
+  "weekend_fatalities_rate" = "wkndfatrte",
+  "vehicle_miles" = "vehicmiles",
+  "unemployment_rate" = "unem",
+  "percent_age_14_24" = "perc14_24",
+  "primary_seatbelt" = "sbprim",
+  "secondary_seatbelt" = "sbsecon"
+  )
+
+data <- data %>% 
+  rename(any_of(col_name_lookup))
+```
+
+
 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
+
+```{r creating pdata}
+pdriving <- pdata.frame(
+  data, 
+  index=c("state", "year_of_observation")
+  )
+
+pdim(pdriving)
+
+# Renaming States
+replacement_state <- c("al", "az", "ar", "ca", "co", "ct", "de", "fl", 
+                       "ga", "id", "il", "in", "ia", "ks", "ky", "la", 
+                       "me", "md", "ma", "mi", "mn", "ms", "mo", "mt", 
+                       "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", 
+                       "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", 
+                       "tx", "ut", "vt", "va", "wa", "wv", "wi", "wy")
+
+levels(pdriving$state) <- replacement_state
+```
+
+
 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
     - What is the average of `total_fatalities_rate` in each of the years in the time period covered in this dataset? 
+
+```{r checking for NA}
+sapply(pdriving, function(x)sum(is.na(x)))
+
+table(pdriving$year_of_observation)
+
+table(pdriving$state)
+
+pdriving %>%
+ is.pconsecutive()
+```
+
+
+```{r initial plots}
+pdriving %>%
+  group_by(state) %>%
+  ggplot(
+    aes(x = reorder(state,total_fatalities_rate), 
+        y = total_fatalities_rate)) +
+  geom_boxplot() +
+  labs(
+    x = "States",  
+    y = "Fatality rate"
+    )
+
+pdriving %>%
+  group_by(year_of_observation) %>%
+  ggplot(aes(x = year_of_observation, y = total_fatalities_rate)) +
+  geom_boxplot() +
+  labs(x = "States",  y = "Fatality rate")
+
+pdriving %>%
+  group_by(state) %>%
+  ggplot(aes(x = reorder(state,total_fatalities_rate), y = unemployment_rate)) +
+  geom_boxplot() +
+  labs(x = "States",  y = "")
+```
+
+
+
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
 
