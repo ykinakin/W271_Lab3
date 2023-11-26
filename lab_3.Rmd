@@ -8,7 +8,6 @@ output:
 ```{r load packages, echo=FALSE, message=FALSE}
 library(tidyverse)
 library(plm)
-library(tidyverse)
 ```
 
 
@@ -42,16 +41,19 @@ head(desc)
 data[data$sl55 == 0.5, 4:6] <- 0
 data[data$sl65 == 0.5, 5:6] <- 0
 
-data$speed_limit <- data %>%
+data <- data %>%
   pivot_longer(col = sl55:slnone, names_to="speed_limit", names_prefix="sl") %>%
-  filter(value >= 0.5) %>%
-  pull(speed_limit)
+  filter(value >= 0.5) %>% 
+  subset(select = -c(value))
 ```
 
 - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`.
     
 ```{r re-encode year}
-data$year_of_observation <- data$year
+data <- data[-c(which(colnames(data)=="d80"):which(colnames(data)=="d04"))]
+
+data <- data %>% 
+       rename("year_of_observation" = "year")
 ```
 
 - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series).
@@ -67,10 +69,10 @@ data <- data %>%
 
 data[data$bac08 == 0.5, "bac10"] <- 0
 
-data$blood_alcohol_level <- data %>%
+data <- data %>%
   pivot_longer(col = bac10:bacnone, names_to="blood_alcohol_level", names_prefix="bac") %>%
   filter(value >= 0.5) %>%
-  pull(blood_alcohol_level)
+  subset(select = -c(value))
 ```
 
 - Rename these variables to sensible names that are legible to a reader of your analysis. For example, the dependent variable as provided is called, `totfatrte`. Pick something more sensible, like, `total_fatalities_rate`. There are few enough of these variables to change, that you should change them for all the variables in the data. (You will thank yourself later.)
@@ -115,12 +117,12 @@ pdriving <- pdata.frame(
 pdim(pdriving)
 
 # Renaming States
-replacement_state <- c("al", "az", "ar", "ca", "co", "ct", "de", "fl", 
-                       "ga", "id", "il", "in", "ia", "ks", "ky", "la", 
-                       "me", "md", "ma", "mi", "mn", "ms", "mo", "mt", 
-                       "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", 
-                       "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", 
-                       "tx", "ut", "vt", "va", "wa", "wv", "wi", "wy")
+replacement_state <- c("AL", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", 
+                       "GA", "ID", "IL", "IN", "IA", "KS", "KY", "LA", 
+                       "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", 
+                       "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", 
+                       "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", 
+                       "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY")
 
 levels(pdriving$state) <- replacement_state
 ```
@@ -158,17 +160,20 @@ pdriving %>%
   group_by(year_of_observation) %>%
   ggplot(aes(x = year_of_observation, y = total_fatalities_rate)) +
   geom_boxplot() +
-  labs(x = "States",  y = "Fatality rate")
+  labs(
+    x = "States",  
+    y = "Fatality rate"
+    )
 
 pdriving %>%
   group_by(state) %>%
   ggplot(aes(x = reorder(state,total_fatalities_rate), y = unemployment_rate)) +
   geom_boxplot() +
-  labs(x = "States",  y = "")
+  labs(
+    x = "States",  
+    y = "Unemployment Rate",
+    )
 ```
-
-
-
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
 
@@ -176,7 +181,63 @@ As with every EDA this semester, the goal of this EDA is not to document your ow
 
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
 
-- Why is fitting a linear model a sensible starting place? 
+```{r}
+mod.prel <- lm(
+  formula = total_fatalities_rate ~ year_of_observation, 
+  data = pdriving
+  ) 
+
+summary(mod.prel)
+```
+```{r Preliminary Model}
+mod.prel <- plm(
+  formula = total_fatalities_rate ~ year_of_observation, 
+  data = pdriving,
+  model = "pooling"
+  )
+
+summary(mod.prel)
+```
+```{r Preliminary Model Plot}
+pdriving%>%
+  ggplot(
+    aes(
+      x = year_of_observation, 
+      y = total_fatalities_rate
+      )
+    ) +
+  geom_point(
+    color = "gray", 
+    alpha = 0.4
+    ) +
+  geom_point(
+    data = broom::augment(mod.prel),
+    aes(x = year_of_observation, y = .fitted),
+    colour = "blue", size = 3) +
+  labs(
+    x = "Year",
+    y = "Fatality rate"
+    ) +
+  theme_classic() +
+  theme(
+  plot.title = element_text(color = "#0099F8",
+                            size = 14,
+                            face = "bold"),
+  plot.subtitle = element_text(color="#969696",
+                               size = 12,
+                               face = "italic"),
+  axis.title = element_text(color = "#969696",
+                            size = 12,
+                            face = "bold"),
+  axis.text = element_text(color = "#969696", size = 10),
+  axis.text.x = element_text(angle = 90),
+  axis.line = element_line(color = "#969696"),
+  axis.ticks = element_line(color = "#969696"),
+  legend.position = "none"
+  ) 
+```
+
+- Why is fitting a linear model a sensible starting place?
 - What does this model explain, and what do you find in this model? 
 - Did driving become safer over this period? Please provide a detailed explanation.
 - What, if any, are the limitation of this model. In answering this, please consider **at least**: 
@@ -186,6 +247,20 @@ Estimate a linear regression model of *totfatrte* on a set of dummy variables fo
 # (15 points) Expanded Model 
 
 Expand the **Preliminary Model** by adding variables related to the following concepts: 
+
+```{r}
+mod.exp <- plm(
+  formula = total_fatalities_rate ~ year_of_observation +
+    blood_alcohol_level + per_se_law + primary_seatbelt +
+    secondary_seatbelt + sl70plus + grad_driver_law +
+    percent_age_14_24 + unemployment_rate + vehicle_miles, 
+  data = pdriving,
+  model = "pooling"
+  )
+
+summary(mod.exp)
+```
+
 
 - Blood alcohol levels 
 - Per se laws
@@ -206,6 +281,33 @@ If it is appropriate, include transformations of these variables. Please careful
 # (15 points) State-Level Fixed Effects 
 
 Re-estimate the **Expanded Model** using fixed effects at the state level. 
+
+```{r Fixed Effect Model}
+mod.fix <- plm(
+  formula = total_fatalities_rate ~ state + year_of_observation +
+    blood_alcohol_level + per_se_law + primary_seatbelt +
+    secondary_seatbelt + sl70plus + grad_driver_law +
+    percent_age_14_24 + unemployment_rate + vehicle_miles - 1,
+  data = pdriving,
+  model = "pooling"
+  )
+
+summary(mod.fix)
+```
+
+```{r}
+mod.fix <- plm(
+  formula = total_fatalities_rate ~ state + year_of_observation +
+    blood_alcohol_level + per_se_law + primary_seatbelt +
+    secondary_seatbelt + sl70plus + grad_driver_law +
+    percent_age_14_24 + unemployment_rate + vehicle_miles - 1,
+  data = pdriving,
+  effect = "individual",
+  model = "pooling"
+  )
+
+summary(mod.fix)
+```
 
 - What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
 - What do you estimate for coefficients on per se laws? How do the coefficients on per se laws change, if at all? 
