@@ -149,56 +149,63 @@ replacement_state <- c("al", "az", "ar", "ca", "co", "ct", "de", "fl",
                        "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", 
                        "tx", "ut", "vt", "va", "wa", "wv", "wi", "wy")
 
-replacement_state <- c("al", 
-                       "az", 
-                       "ar", 
-                       "ca", 
-                       "co", 
-                       "ct", 
-                       "de", 
-                       "fl", 
-                       "ga", 
-                       "id", 
-                       "il", 
-                       "in", 
-                       "ia", 
-                       "ks", 
-                       "ky", 
-                       "la", 
-                       "me", 
-                       "md", 
-                       "ma", 
-                       "mi", 
-                       "mn", 
-                       "ms", 
-                       "mo", 
-                       "mt", 
-                       "ne", 
-                       "nv",
-                       "nh", 
-                       "nj", 
-                       "nm", 
-                       "ny", 
-                       "nc", 
-                       "nd", 
-                       "oh", 
-                       "ok",
-                       "or", 
-                       "pa", 
-                       "ri", 
-                       "sc", 
-                       "sd", 
-                       "tn", 
-                       "tx", 
-                       "ut", 
-                       "vt", 
-                       "va", 
-                       "wa", 
-                       "wv", 
-                       "wi", 
-                       "wy")
+state_dict <- c("al" = "south",
+                       "az" = "southwest", 
+                       "ar" = "south", 
+                       "ca" = "west", 
+                       "co" = "west", 
+                       "ct" = "northeast", 
+                       "de" = "northeast", 
+                       "fl" = "south", 
+                       "ga" = "south", 
+                       "id" = "west", 
+                       "il" = "midwest", 
+                       "in" = "midwest", 
+                       "ia" = "midwest", 
+                       "ks" = "midwest", 
+                       "ky" = "south", 
+                       "la" = "south", 
+                       "me" = "northeast", 
+                       "md" = "northeast", 
+                       "ma" = "northeast", 
+                       "mi" = "midwest", 
+                       "mn" = "midwest", 
+                       "ms" = "south", 
+                       "mo" = "midwest", 
+                       "mt" = "west", 
+                       "ne" = "midwest", 
+                       "nv" = "southwest",
+                       "nh" = "northeast", 
+                       "nj" = "northeast", 
+                       "nm" = "southwest", 
+                       "ny" = "northeast", 
+                       "nc" = "south", 
+                       "nd" = "midwest", 
+                       "oh" = "midwest", 
+                       "ok" = "southwest",
+                       "or" = "west", 
+                       "pa" = "northeast", 
+                       "ri" = "northeast", 
+                       "sc" = "south", 
+                       "sd" = "midwest", 
+                       "tn" = "south", 
+                       "tx" = "southwest", 
+                       "ut" = "west", 
+                       "vt" = "northeast", 
+                       "va" = "south", 
+                       "wa" = "west", 
+                       "wv" = "south", 
+                       "wi" = "midwest", 
+                       "wy" = "west")
+
+replacement_region <- c("south", "southwest", "south", "west", "west", "northeast", "northeast", "south", "south", "west", "midwest", "midwest", "midwest", "midwest", "south", 
+                       "south", "northeast", "northeast", "northeast", "midwest", "midwest", "south", "midwest", "west", "midwest", "southwest", "northeast", "northeast", "southwest", 
+                       "northeast", "south", "midwest", "midwest", "southwest", "west", "northeast", "northeast", "south", "midwest", "south", "southwest", "west", "northeast", "south", 
+                       "west", "south", "midwest", "west")
 
 levels(pdriving$state) <- replacement_state
+pdriving$region <- pdriving$state
+levels(pdriving$region) <- replacement_region
 ```
 
 
@@ -223,24 +230,92 @@ pdriving %>%
   group_by(state) %>%
   ggplot(
     aes(x = reorder(state, total_fatalities_rate_per_100k), 
-        y = total_fatalities_rate_per_100k)) +
+        y = total_fatalities_rate_per_100k, 
+        colour = region)) +
   geom_boxplot() +
   labs(
-    x = "States",  
-    y = "Fatality rate"
-    )
+    x = "State",  
+    y = "Fatality rate (traffic fatalities per 100k individuals)", 
+    ) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+  )
 
 pdriving %>%
   group_by(year) %>%
-  ggplot(aes(x = year, y = total_fatalities_rate_per_100k)) +
+  ggplot(aes(x = year, 
+             y = total_fatalities_rate_per_100k)) +
   geom_boxplot() +
-  labs(x = "States",  y = "Fatality rate")
+  labs(x = "Time",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       )
 
 pdriving %>%
-  group_by(state) %>%
-  ggplot(aes(x = reorder(state,total_fatalities_rate_per_100k), y = unemployment_rate)) +
+  group_by(year) %>%
+  ggplot(aes(x = min_drinking_age, 
+             y = total_fatalities_rate_per_100k),
+         group = min_drinking_age) +
   geom_boxplot() +
-  labs(x = "States",  y = "")
+  labs(x = "Time",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       )
+
+pdriving %>%
+  ggplot(aes(x = log(state_population), y = total_fatalities_rate_per_100k)) +
+  geom_point(aes(colour = state)) +
+  geom_line(aes(colour = state)) +
+    labs(x = "Log(State Population)",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+pdriving %>%
+  ggplot(aes(x = percent_age_14_24, y = total_fatalities_rate_per_100k)) +
+  geom_point(aes(colour = state)) +
+  geom_line(aes(colour = state)) +
+    labs(x = "Percent of State Population aged 14-24",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+pdriving %>%
+  ggplot(aes(x = total_fatalities_per_100mil_miles, y = total_fatalities_rate_per_100k)) +
+  geom_point(aes(colour = state)) +
+  geom_line(aes(colour = state)) +
+    labs(x = "Fatality rate (traffic fatalities per 100M miles driven)", 
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+pdriving %>%
+  ggplot(aes(x = unemployment_rate, y = total_fatalities_rate_per_100k)) +
+  geom_point(aes(colour = state)) +
+    labs(x = "Employment Rate", 
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+
 ```
 
 
