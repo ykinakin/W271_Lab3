@@ -25,10 +25,10 @@ Specifically, this data set contains data for the 48 continental U.S. states fro
 load(file="./data/driving.RData")
 
 ## please comment these calls in your work 
-glimpse(data)
-desc
-
-head(desc)
+# glimpse(data)
+# desc
+# 
+# head(desc)
 ```
 
 # (30 points, total) Build and Describe the Data 
@@ -41,7 +41,7 @@ head(desc)
 data[data$sl55 == 0.5, 4:6] <- 0
 data[data$sl65 == 0.5, 5:6] <- 0
 
-data <- data %>%
+data_cleaned <- data %>%
   pivot_longer(col = sl55:slnone, names_to="speed_limit", names_prefix="sl") %>%
   filter(value >= 0.5) %>% 
   subset(select = -c(value))
@@ -50,26 +50,26 @@ data <- data %>%
 - Produce a new variable, called `year_of_observation` that re-encodes the data that is in `d80`, `d81`, ... , `d04`.
     
 ```{r re-encode year}
-data <- data[-c(which(colnames(data)=="d80"):which(colnames(data)=="d04"))]
+data_cleaned <- data_cleaned[-c(which(colnames(data_cleaned)=="d80"):which(colnames(data_cleaned)=="d04"))]
 
-data <- data %>% 
+data_cleaned <- data_cleaned %>% 
        rename("year_of_observation" = "year")
 ```
 
 - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series).
 
 ```{r re-encode bac}
-data <- add_column(data, bacnone = 0, .after = "bac08")
+data_cleaned <- add_column(data_cleaned, bacnone = 0, .after = "bac08")
 
-data <- data %>% 
+data_cleaned <- data_cleaned %>% 
   mutate(
     bacnone = ifelse(bac10 == 0 & bac08 == 0, 1, 0),
     bac10 = ifelse(bac10 > 0 & bac08 == 0, 1, bac10)
     )
 
-data[data$bac08 == 0.5, "bac10"] <- 0
+data_cleaned[data_cleaned$bac08 == 0.5, "bac10"] <- 0
 
-data <- data %>%
+data_cleaned <- data_cleaned %>%
   pivot_longer(col = bac10:bacnone, names_to="blood_alcohol_level", names_prefix="bac") %>%
   filter(value >= 0.5) %>%
   subset(select = -c(value))
@@ -79,7 +79,7 @@ data <- data %>%
 
 ```{r renaming cols}
 col_name_lookup <- c(
-  "min_drink_age" = "minage",
+  "min_drinking_age" = "minage",
   "zero_tol_law" = "zerotol",
   "grad_driver_law" = "gdl",
   "per_se_law" = "perse",
@@ -96,21 +96,23 @@ col_name_lookup <- c(
   "vehicle_miles" = "vehicmiles",
   "unemployment_rate" = "unem",
   "percent_age_14_24" = "perc14_24",
+  "speed_limit_70_or_higher" = "sl70plus",
   "primary_seatbelt" = "sbprim",
-  "secondary_seatbelt" = "sbsecon"
+  "secondary_seatbelt" = "sbsecon",
+  "vehicle_miles_per_capita"="vehicmilespc"
   )
 
-data <- data %>% 
+data_cleaned <- data_cleaned %>% 
   rename(any_of(col_name_lookup))
 ```
 
 
 2. (5 points) Provide a description of the basic structure of the dataset. What is this data? How, where, and when is it collected? Is the data generated through a survey or some other method? Is the data that is presented a sample from the population, or is it a *census* that represents the entire population? Minimally, this should include:
     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
-
+    
 ```{r creating pdata}
 pdriving <- pdata.frame(
-  data, 
+  data_cleaned, 
   index=c("state", "year_of_observation")
   )
 
@@ -125,6 +127,17 @@ replacement_state <- c("AL", "AZ", "AR", "CA", "CO", "CT", "DE", "FL",
                        "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY")
 
 levels(pdriving$state) <- replacement_state
+
+replacement_region <- c(
+  "south", "southwest", "south", "west", "west", "northeast", "northeast", "south", "south",
+  "west", "midwest", "midwest", "midwest", "midwest", "south", "south", "northeast", "northeast", 
+  "northeast", "midwest", "midwest", "south", "midwest", "west", "midwest", "southwest", "northeast", 
+  "northeast", "southwest", "northeast", "south", "midwest", "midwest", "southwest", "west", "northeast",
+  "northeast", "south", "midwest", "south", "southwest", "west", "northeast", "south", "west", "south", 
+  "midwest", "west")
+
+pdriving$region <- pdriving$state
+levels(pdriving$region) <- replacement_region
 ```
 
 
@@ -173,6 +186,96 @@ pdriving %>%
     x = "States",  
     y = "Unemployment Rate",
     )
+
+##############################################################
+pdriving %>%
+  group_by(state) %>%
+  ggplot(
+    aes(x = reorder(state, total_fatalities_rate),
+        y = total_fatalities_rate,
+        colour = region)) +
+  geom_boxplot() +
+  labs(
+    x = "State",
+    y = "Fatality rate (traffic fatalities per 100k individuals)",
+    ) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+  )
+
+pdriving %>%
+  group_by(year_of_observation) %>%
+  ggplot(aes(x = year_of_observation, 
+             y = total_fatalities_rate)) +
+  geom_boxplot() +
+  labs(x = "Time",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       )
+
+pdriving %>%
+  group_by(year_of_observation) %>%
+  ggplot(aes(x = min_drinking_age, 
+             y = total_fatalities_rate),
+         group = min_drinking_age) +
+  geom_boxplot() +
+  labs(x = "Time",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       )
+
+pdriving %>%
+  ggplot(aes(x = log(state_population), y = total_fatalities_rate)) +
+  geom_point(aes(colour = state)) +
+  geom_line(aes(colour = state)) +
+    labs(x = "Log(State Population)",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+pdriving %>%
+  ggplot(aes(x = percent_age_14_24, y = total_fatalities_rate)) +
+  geom_point(aes(colour = state)) +
+  geom_line(aes(colour = state)) +
+    labs(x = "Percent of State Population aged 14-24",  
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+pdriving %>%
+  ggplot(aes(x = total_fatalities_per_100mil_miles, y = total_fatalities_rate)) +
+  geom_point(aes(colour = state)) +
+  geom_line(aes(colour = state)) +
+    labs(x = "Fatality rate (traffic fatalities per 100M miles driven)", 
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
+
+pdriving %>%
+  ggplot(aes(x = unemployment_rate, y = total_fatalities_rate)) +
+  geom_point(aes(colour = state)) +
+    labs(x = "Employment Rate", 
+       y = "Fatality rate (traffic fatalities per 100k individuals)", 
+       ) +
+  theme(
+    legend.position = 'bottom'
+  ) +
+  guides(
+    colour = guide_legend(nrow = 4)
+  )
 ```
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
@@ -181,14 +284,6 @@ As with every EDA this semester, the goal of this EDA is not to document your ow
 
 Estimate a linear regression model of *totfatrte* on a set of dummy variables for the years 1981 through 2004 and interpret what you observe. In this section, you should address the following tasks: 
 
-```{r}
-mod.prel <- lm(
-  formula = total_fatalities_rate ~ year_of_observation, 
-  data = pdriving
-  ) 
-
-summary(mod.prel)
-```
 ```{r Preliminary Model}
 mod.prel <- plm(
   formula = total_fatalities_rate ~ year_of_observation, 
@@ -252,8 +347,8 @@ Expand the **Preliminary Model** by adding variables related to the following co
 mod.exp <- plm(
   formula = total_fatalities_rate ~ year_of_observation +
     blood_alcohol_level + per_se_law + primary_seatbelt +
-    secondary_seatbelt + sl70plus + grad_driver_law +
-    percent_age_14_24 + unemployment_rate + vehicle_miles, 
+    secondary_seatbelt + speed_limit_70_or_higher + grad_driver_law +
+    percent_age_14_24 + unemployment_rate + vehicle_miles_per_capita, 
   data = pdriving,
   model = "pooling"
   )
@@ -286,21 +381,8 @@ Re-estimate the **Expanded Model** using fixed effects at the state level.
 mod.fix <- plm(
   formula = total_fatalities_rate ~ state + year_of_observation +
     blood_alcohol_level + per_se_law + primary_seatbelt +
-    secondary_seatbelt + sl70plus + grad_driver_law +
-    percent_age_14_24 + unemployment_rate + vehicle_miles - 1,
-  data = pdriving,
-  model = "pooling"
-  )
-
-summary(mod.fix)
-```
-
-```{r}
-mod.fix <- plm(
-  formula = total_fatalities_rate ~ state + year_of_observation +
-    blood_alcohol_level + per_se_law + primary_seatbelt +
-    secondary_seatbelt + sl70plus + grad_driver_law +
-    percent_age_14_24 + unemployment_rate + vehicle_miles - 1,
+    secondary_seatbelt + speed_limit_70_or_higher + grad_driver_law +
+    percent_age_14_24 + unemployment_rate + vehicle_miles_per_capita - 1,
   data = pdriving,
   effect = "individual",
   model = "pooling"
