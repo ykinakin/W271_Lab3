@@ -204,25 +204,6 @@ pdriving %>%
   )
 
 pdriving %>%
-  group_by(year_of_observation) %>%
-  ggplot(aes(x = year_of_observation, 
-             y = total_fatalities_rate)) +
-  geom_boxplot() +
-  labs(x = "Time",  
-       y = "Fatality rate (traffic fatalities per 100k individuals)", 
-       )
-
-pdriving %>%
-  group_by(year_of_observation) %>%
-  ggplot(aes(x = min_drinking_age, 
-             y = total_fatalities_rate),
-         group = min_drinking_age) +
-  geom_boxplot() +
-  labs(x = "Time",  
-       y = "Fatality rate (traffic fatalities per 100k individuals)", 
-       )
-
-pdriving %>%
   ggplot(aes(x = log(state_population), y = total_fatalities_rate)) +
   geom_point(aes(colour = state)) +
   geom_line(aes(colour = state)) +
@@ -277,6 +258,13 @@ pdriving %>%
     colour = guide_legend(nrow = 4)
   )
 ```
+We note that there is a range of fatality rates across states over the time period under consideration, with a general decrease in fatality rate from 1980 - 1990, after which the mean fatality rate across all states seems to remain relatively constant. The variance during all years under consideration looks generally stable, though as the mean moves towards zero, the distribution is increasingly skewed towards a fat tail. Interestingly, the northeast and mid-west regions of the country appear to in general have lower rates of driving fatalities, while those in the south, southwest and west generally have higher incidences. This may be attributable in some way to either the difference in climate or perhaps the state of the highway network. 
+
+There appears to be a weak correlation between an increase in the percentage of the state's population aged 12-24 and increasing fatality rates. 
+
+Interestingly, we note that an increase in a state's population is negatively correlated with the driving fatality rate. This effect is most prominent when looked at within state and does not apply more broadly (i.e. more populous states do not necessarily have fewer fatalities). This is not corrected for time, and one possible cause for this apparent correlation is that, as time goes on, state populations tend to increase while more restrictive driving laws also tend to be enacted and enforced (and cars tend to be better designed and more survivable during crashes). Somewhat paradoxically, the fatality rate per 100k individuals is positively correlated with the fatality rate per 100M miles driven. This is an exmaple of interactions between underlying variable causing spurious correlation. There is an obvious correlation between a state's population and the number of miles driven in that state, moderating the effect of increasing regulation decreasing fatality rate over time. 
+
+No obvious correlation exists between total driving fatality rate and unemployment, either within state or globally across the dataset. 
 
 As with every EDA this semester, the goal of this EDA is not to document your own process of discovery -- save that for an exploration notebook -- but instead it is to bring a reader that is new to the data to a full understanding of the important features of your data as quickly as possible. In order to do this, your EDA should include a detailed, orderly narrative description of what you want your reader to know. Do not include any output -- tables, plots, or statistics -- that you do not intend to write about.
 
@@ -333,6 +321,7 @@ pdriving%>%
 ```
 
 - Why is fitting a linear model a sensible starting place?
+A linear model is always a sensible place to start as they are generally the most parsimoneous and easily explainable models. For this dataset in particular, in the EDA we have already identified some areas in which there appear to be linear relationships, therefore, it's entirely appropriate to start with linear methods in the modelling process. 
 - What does this model explain, and what do you find in this model? 
 - Did driving become safer over this period? Please provide a detailed explanation.
 - What, if any, are the limitation of this model. In answering this, please consider **at least**: 
