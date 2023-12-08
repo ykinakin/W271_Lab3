@@ -54,7 +54,7 @@ data_cleaned <- data %>%
 data_cleaned <- data_cleaned[-c(which(colnames(data_cleaned)=="d80"):which(colnames(data_cleaned)=="d04"))]
 
 data_cleaned <- data_cleaned %>% 
-       rename("year_of_observation" = "year")
+       dplyr::rename("year_of_observation" = "year")
 ```
 
 - Produce a new variable for each of the other variables that are one-hot encoded (i.e. `bac*` variable series).
@@ -104,7 +104,7 @@ col_name_lookup <- c(
   )
 
 data_cleaned <- data_cleaned %>% 
-  rename(any_of(col_name_lookup))
+  dplyr::rename(any_of(col_name_lookup))
 ```
 
 
@@ -337,6 +337,11 @@ pdriving%>%
   ) 
 ```
 
+```{r Preliminary Model tests, echo = FALSE, results = 'latex'}
+pcdtest(mod.prel, test ='lm')
+pdwtest(mod.prel)
+```
+
 - Why is fitting a linear model a sensible starting place?
 A linear model is always a sensible place to start as they are generally the most parsimoneous and easily explainable models. For this dataset in particular, in the EDA we have already identified some areas in which there appear to be linear relationships, therefore, it's entirely appropriate to start with linear methods in the modelling process. 
 - What does this model explain, and what do you find in this model? 
@@ -366,6 +371,11 @@ summary(mod.exp)
 ```
 
 
+```{r Expanded Model tests, echo = FALSE, results = 'latex'}
+pcdtest(mod.exp, test ='lm')
+pdwtest(mod.exp)
+```
+
 - Blood alcohol levels 
 - Per se laws
 - Primary seat belt laws (Note that if a law was enacted sometime within a year the fraction of the year is recorded in place of the zero-one indicator.)
@@ -391,13 +401,23 @@ mod.fix <- plm(
   formula = total_fatalities_rate ~ state + year_of_observation +
     blood_alcohol_level + per_se_law + primary_seatbelt +
     secondary_seatbelt + speed_limit_70_or_higher + grad_driver_law +
-    percent_age_14_24 + unemployment_rate + vehicle_miles_per_capita - 1,
+    percent_age_14_24 + unemployment_rate + vehicle_miles_per_capita,
   data = pdriving,
-  effect = "individual",
-  model = "pooling"
+  model = "within"
   )
 
 summary(mod.fix)
+```
+
+```{r Fixed Model CI, echo = FALSE, results = 'latex'}
+het_se <- sqrt(vcovHC(mod.fix, method="white1", type="HCO"))
+bac_het_se <- het_se[33,33]
+per_se_het_se <- het_se[26,26]
+pri_sb_het_se <- het_se[25,25]
+```
+
+```{r Fixed Model tests, echo = FALSE, results = 'latex'}
+pFtest(mod.fix, mod.exp)
 ```
 
 - What do you estimate for coefficients on the blood alcohol variables? How do the coefficients on the blood alcohol variables change, if at all? 
@@ -417,6 +437,19 @@ Instead of estimating a fixed effects model, should you have estimated a random 
 - If the assumptions are, in fact, met in the data, then estimate a random effects model and interpret the coefficients of this model. Comment on how, if at all, the estimates from this model have changed compared to the fixed effects model. 
 - If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
 
+```{r Random Effects Model}
+mod.ran <- plm(
+  formula = total_fatalities_rate ~ state + year_of_observation +
+    blood_alcohol_level + per_se_law + primary_seatbelt +
+    secondary_seatbelt + speed_limit_70_or_higher + grad_driver_law +
+    percent_age_14_24 + unemployment_rate + vehicle_miles_per_capita,
+  data = pdriving,
+  model = "random"
+  )
+
+phtest(mod.fix, mod.ran)
+```
+
 # (10 points) Model Forecasts 
 
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
@@ -433,3 +466,23 @@ Now, use these changes in driving to make forecasts from your models.
 # (5 points) Evaluate Error 
 
 If there were serial correlation or heteroskedasticity in the idiosyncratic errors of the model, what would be the consequences on the estimators and their standard errors? Is there any serial correlation or heteroskedasticity? 
+
+
+```{r Best Model tests, echo = FALSE, results = 'latex'}
+pcdtest(mod.fix, test ='lm')
+pdwtest(mod.fix)
+pbgtest(mod.fix, order=2)
+```
+
+```{r Best Model errors, echo = FALSE, results = 'latex'}
+reg.se <- coef(summary(mod.fix))[1,2]
+het.se <- sqrt(vcovHC(mod.fix, method="white1", type="HC0")[1,1])
+cluster.se <- sqrt(vcovHC(mod.fix, method="white2", type="HC0")[1,1])
+nw.se <- sqrt(vcovNW(mod.fix, type="HC0", maxlag=1)[1,1])
+arellano.se <- sqrt(vcovHC(mod.fix, method="arellano", type="HC0")[1,1])
+knitr::kable(data.frame(
+  "Type" = c("Regular OLS", "Robust", "Cluster Robust", "Newey West", "Arellano"),
+  "SE" = c(reg.se, het.se, cluster.se, nw.se, arellano.se)
+), "latex")
+
+```
