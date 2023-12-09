@@ -840,57 +840,75 @@ phtest(mod.fix, mod.random)
 
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
 
-```{r}
-#Source: https://www.fhwa.dot.gov/policyinformation/travel_monitoring/tvt.cfm (September 2023 data tab)
-vmd_data <-  read.csv("./data/23septvt_formatted.csv")
+``` {r pull data from FRED}
+# library(fredr)
+# fredr_set_key('f62c7a0a7d2a6882f681e925f1922742')
+# 
+# vehicle_miles_name <- 'TRFVOLUSM227SFWA'
+# population <- 'POPTHM'
+# time_start = as.Date("2018-01-01")
+# time_end = as.Date("2023-09-01")
+# 
+# recent_driving_data <- fredr(
+#   series_id = vehicle_miles_name,
+#   observation_start = time_start,
+#   observation_end = time_end
+#   ) %>%
+#    select(
+#      date,
+#      value
+#    ) %>%
+#    rename(
+#      "miles_driven_per_month" = value
+#    )
+# 
+# recent_population_data <- fredr(
+#    series_id = population,
+#    observation_start = time_start,
+#    observation_end = time_end
+#    ) %>%
+#    select(
+#      date,
+#      value
+#    ) %>%
+#    rename(
+#      "pop" = value
+#    )
+# 
+# recent_data = merge(recent_driving_data, recent_population_data)
+# 
+# save(recent_data, file = "fredr.Rda")
 ```
 
-```{r}
-#Create a column for year and month
-vmd_data$year <- str_sub(vmd_data$OBS_DATE, -2, -1)
-vmd_data$month <- str_sub(vmd_data$OBS_DATE, 1, 3)
-
-#Select 2018 and 2022 data
-vmd_2018 <- vmd_data %>% 
-  filter(year == 18) %>%
-  select("VMT", "month") %>%
-  rename("vmd_2018" = "VMT")
-
-vmd_2020 <- vmd_data %>% 
-  filter(year == 20) %>%
-  select("VMT", "month")%>%
-  rename("vmd_2020" = "VMT")
-  
-
-#Create new datatable
-vmd_combined <- merge(vmd_2018, vmd_2020)
+``` {r load saved data from FRED}
+load("fredr.Rda")
 ```
 
-```{r}
-#Something went wrong, as I cant convert the variables to numeric, so I'm making it from scratch
+```{r compare month-to-month from 2018 to pandemic}
+recent_data <- recent_data %>%
+  mutate(
+    miles_per_capita = miles_driven_per_month / pop
+  )
 
-my_list <- list(index = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
-                month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-                vmd_2018 = c(244736, 227759, 270705, 275127, 283713, 282648, 290989, 284989, 267434, 281382, 260473, 270370),
-                vmd_2020 = c(260847, 242695, 226638, 167617, 221006, 250330, 265550, 265060, 257531, 266596, 238300, 241451))
+recent_data <- recent_data %>%
+  mutate(
+    difference = (miles_per_capita - recent_data[month(recent_data$date) == month(date) & year(recent_data$date) == 2018,][['miles_per_capita']]) / recent_data[month(recent_data$date) == month(date) & year(recent_data$date) == 2018,][['miles_per_capita']]
+      )
 
-df <- as.data.frame(my_list)
-
-df$difference <- (df$vmd_2020 - df$vmd_2018)
-df$percent <- df$difference / df$vmd_2018
+max_month = c(as.numeric(recent_data[which.max(recent_data$difference),][['date']]), as.numeric(recent_data[which.max(recent_data$difference),][['difference']]))
+max_pandemic_month = c(as.numeric(recent_data[recent_data$date > as.Date("2020-04-01"),][which.max(recent_data[recent_data$date > as.Date("2020-04-01"),]$difference),][['date']]), as.numeric(recent_data[recent_data$date > as.Date("2020-04-01"),][which.max(recent_data[recent_data$date > as.Date("2020-04-01"),]$difference),][['difference']]))
+min_month = c(as.numeric(recent_data[which.min(recent_data$difference),][['date']]), as.numeric(recent_data[which.min(recent_data$difference),][['difference']]))
 ```
-
 
 - Comparing monthly miles driven in 2018 to the same months during the pandemic: 
 
 ```{r, echo=FALSE}
-ggplot(data = df) +
-  geom_line(aes(index, y=vmd_2018, color="2018")) +
-  geom_line(aes(x = index, y=vmd_2020, color="2020")) +
+ggplot(data = recent_data) +
+  geom_line(aes(x = month(date), y=difference, group=year(date), colour = as.factor(year(date)))) +
   labs(
     x = "Month",
-    y = "Vehicles Miles Driven",
-    title = "Vehicle Miles Driven by Month",
+    y = "Percentage Change (%)",
+    title = "Percentage Change in per capita Miles Driven per Month \n to the Same Period in 2018",
     color=""
   ) +
   theme_classic() +
@@ -902,23 +920,26 @@ ggplot(data = df) +
   axis.text = element_text(color = "#969696"),
   axis.line = element_line(color = "#969696"),
   axis.ticks = element_line(color = "#969696")) +
-  scale_x_continuous(breaks = scales::pretty_breaks(n = 12)) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) 
- 
+  scale_x_continuous(breaks = seq_along(month.name),  labels = month.name) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  theme(
+    axis.text.x = element_text(angle = 55, hjust = 1)
+  )
 ```
 
 
   - What month demonstrated the largest decrease in driving? How much, in percentage terms, lower was this driving? 
   
-  > The largest drop in driving was April, which was the first full month of COVID-19 lockdown. Decreasing from 275,127 in 2018 tp 167,617 in 2020. This is a 39.08% decrease.
+  > The largest drop in driving was April, which was the first full month of COVID-19 lockdown. This was a percentage decrease of approximately -39.4% in the number of per capita miles driven.
   
   - What month demonstrated the largest increase in driving? How much, in percentage terms, higher was this driving? 
   
-  > January had the highest increase in driving, increasing from 244,726 in 2018 to 260,847 in 2020. This is a 6.58% increase. 
+  > January had the highest increase in driving, increasing by approximately 5.3% in the number of per capita miles driven. If we confine our search to only those times after most lockdowns came into effect around the US, Jan 2023 showed the smallest decrease with per capita miles running only at approximately -0.5% compared with Jan 2018. 
   
 Now, use these changes in driving to make forecasts from your models. 
 
 - Suppose that the number of miles driven per capita, increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
+
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 
 # (5 points) Evaluate Error 
