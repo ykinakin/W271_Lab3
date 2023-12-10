@@ -314,7 +314,16 @@ ggcorrplot(correlation_matrix, hc.order = TRUE, type="lower", lab=TRUE, lab_size
   labs(title = "Correlation Matrix of Numeric Variables")
 ```
 
-> With the total fatalities rate, we can see that there is a positive correlation with unemployment_rate, percent_age_14_24 and vehicle_miles_per_capita, while all of the other variables have a negative correlation. Each of the variables are analyzed in more detail below.
+> With the total fatalities rate, we can see that there is a positive correlation with unemployment_rate, percent_age_14_24 and vehicle_miles_per_capita, while all of the other variables have a negative correlation. None of the correlation coefficients is above 0.5, so these covariation between the fatality rates and the other variables is not particularly high. It is important to also note the high value between vehicle miles driven and state population (0.97) as the high covariance has a potential to skew model results. Counterintuitively, there appears to be no corrlation bewteen speed limit values and the total fatality rate.
+
+```{r, fig.width=8}
+library(GGally)
+ggpairs(data_analysis[sapply(data_analysis, is.numeric)])
+```
+
+> Looking at the pair plots for the numeric variables, we can see that speed limit and minimum drinking age appear to be distributed more as factor variables than numeric variables. The pair-plot from the rest of the variables show a decent range in variation. The high correlation between vehicle mileage and state population doesn't appear to be perfect, so any issues with perfect colinearity are not likely to arise.
+
+> Each of the dependent variables are analyzed in more detail below. 
 
 ### Unemployment Rate
 
@@ -450,7 +459,7 @@ bxplt_70 <- ggplot(data_cleaned, aes(x = speed_limit_70_or_higher, y = total_fat
 
 > 1. *Year*: There is a subtle decline in fatalities by year.
 > 2. *State*: The fatality rate by state varies drastically, and we expect this to be a significant variable in our model. 
-> 3. *Seatbelt*: Fatality rates are the highest when ther are no seatbelts.
+> 3. *Seatbelt*: Fatality rates are the highest when there are no seatbelts.
 > 4. *Primary Seatbelt Law*: There appears to be a slight deline in the fatality rate when there are primary seatbelt laws.
 > 5. *Secondary Seatbelt Law*: The different in total fatality rate is relatively minor between both factors. 
 > 6. *Blood Alcohol Level*: There appears to be higher fatalities when there are no blood alcohol laws, and also when the laws are higher (0.10 vs 0.08).
@@ -672,8 +681,8 @@ stargazer(mod.exp, title = "Expanded Model", no.space = TRUE, header = FALSE, fo
 - Impact of Other Variables
 
 > *Year*: Each year has a negative coefficient and are statistically significant. Relatively to the preliminary model, the impacts are lessened as presumably some of the effect was transferred to other variables.
-> *Speed Limit of 70 or Higher*: When the speed limit is 70 or higher, the fatality rate increases by 2.988 which is statistically significant.
-> *Percentage of Population aged 14-24*: For each percentage of the population aged 14-24 the fatality rate increases by 0.192, however, this is not statistically significant.
+> *Speed Limit of 70 or Higher*: When the speed limit is 70 or higher, the fatality rate increases by 2.988 which is both statistically and practically significant.
+> *Percentage of Population aged 14-24*: For each percentage of the population aged 14-24 the fatality rate increases by 0.192, however, this is not a statistically significant effect.
 > *Log of Unemployment Rate*: As the log of unemployment increases, the fatality rate increases by 5.137 which is statistically significant.
 > *Vehicles per Capita*: As the vehicles per capita increases, the fatality rate increases by 0.003 which is statistically significant.
 
@@ -966,7 +975,7 @@ Now, use these changes in driving to make forecasts from your models.
 
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 
-  > Modifying the FE coefficient as decsribed above, the effect of that drop in miles driven when scaled to an entire year would result in approximtely 3.6 fewer traffic fatalities per 100k residents. The difficulty with this estimate is that it assumes that driving rates will remain that low for a 12 month period which we know is not the case. 
+  > Modifying the FE coefficient as decsribed above, the effect of that drop in miles driven when scaled to an entire year would result in approximtely 3.6 fewer traffic fatalities per 100k residents. The difficulty with this estimate is that it assumes that driving rates will remain that low for a 12 month period. 
 
 # (5 points) Evaluate Error 
 
