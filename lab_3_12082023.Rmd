@@ -217,7 +217,7 @@ data_cleaned$blood_alcohol_level <- as.factor(data_cleaned$blood_alcohol_level)
     
 > *Provide a description of the basic structure of the dataset*
 
-> After cleaning the data, the dataset has 27 columns and 1,200 rows. With each year from 1980 to 2004 having 48 rows for each of the lower 48 states (i.e., excluding Alaska and Hawaii). For each year and for each state information is given about the total number of fatalities per 100,000 people under several different criteria (e.g., number that occured at night or on the weekend), as well as certain demographic data such as unemployment rate, and various laws for each state in each year about blood alcohol level and whether or not a seatbelt is required.
+> After cleaning, the dataset consists of 27 features and 1,200 individual measurements with each year from 1980 to 2004 having 48 rows representing a datapoint for each of the lower 48 states (i.e. excluding Alaska and Hawaii). Information is given about the total number of fatalities per 100,000 people under several different criteria (e.g., number that occured at night or on the weekend), as well as certain demographic data such as unemployment rate, and various laws for each state in each year about blood alcohol level and whether or not a seatbelt is required.
 
 > *What is the data?*
 
@@ -225,17 +225,19 @@ data_cleaned$blood_alcohol_level <- as.factor(data_cleaned$blood_alcohol_level)
 
 > *How, where, and when is it collected?*
 
-> The data is collected for each of the continental 48 states for each year from 1980 to 2004. The dependent variable of interest is the total fatalities per 100,000 population in each state. It's unclear how population is determined, if it is for the population as a whole, population of drivers only, another metric. 
+> These data are complied by Dr. Donald G Freeman in his paper \textit{Drunk Driving Legislation and Traffic Fatalities: New Evidence on BAC 08 Laws}\footnote{https://doi.org/10.1111/j.1465-7287.2007.00039.x}, coming from several sources. Data on fatality rates are provided by the National Highway Traffic Safety Administration's (NHTSA) Fatality Analysis Reporting System (FARS). Data on traffic legislation for years between 1982 and 1999 provided by Thomas Dee, with data for later years downloaded directly from the NHTSA website. Unemployment data are taken from the US Bureau of Labour Statistics and age data are taken from the US Bureau of the Census. These data are not collected through a survey, but are rather sourced either directly from census or compiled by researchers or government agencies from publicly available information. These data should therefore be interpreted as census data that represent the entire population. 
 
 > *Is the data generated through a survey or some other method?*
 
 > In the article "Drunk Driving Legislation and Traffic Fatalities: New Evidence on BAC 08 Laws" (Donald G. Freeman, 2007), the data was collected as follows:
 
   > "Fatality data are compiled from the Fatality Analysis Reporting System (FARS) administered by NHTSA. FARS compiles data on all traffic crashes that result in the death of a vehicle occupant or a nonmotorist. The data are gathered by state employees using a standard format for comparability across jurisdictions. Each record contains information on date, time, day of week, road conditions, age of victim, age of driver(s), number of vehicles, vehicle speed, and many other crash attributes."
+  
+> These data are not collected through a survey, but are rather sourced either directly from census or compiled by researchers or government agencies from publicly available information. They should therefore be interpreted as census data that represent the entire population. 
 
 > *Is the data that is presented a sample from the population, or is it a census that represents the entire population?*
 
-> The data was collected by the Fatality Analysis Reporting System (FARS) which is administered by the U.S. Department of Transportation, National Highway Traffic Safety Administrtaion. We therefore believe that the figures represent the entire population of the state, to the extent that the fatalities were entered. 
+> The data was collected by the Fatality Analysis Reporting System (FARS) which is administered by the U.S. Department of Transportation, National Highway Traffic Safety Administrtaion. These are not voluntary survey data, but are rather sourced either directly from census or compiled by researchers or government agencies from publicly available information. They should therefore be interpreted as census data that represent the entire population. . 
 
 > *How is the dependent variable of interest defined*
 
@@ -247,7 +249,7 @@ data_cleaned$blood_alcohol_level <- as.factor(data_cleaned$blood_alcohol_level)
 3. (20 points) Conduct a very thorough EDA, which should include both graphical and tabular techniques, on the dataset, including both the dependent variable `total_fatalities_rate` and the potential explanatory variables. Minimally, this should include: 
     - How is the our dependent variable of interest `total_fatalities_rate` defined? 
     
-    > The dependent variable of interest is defined above, but it is the total number of fatalities per 100,000 of the population.
+    > The dependent variable of interest is defined above, but to reiterate was generated by dividing the raw FARS traffic fatality counts by the state population normalized to 100,000 residents.
     
 \newpage
 
@@ -260,16 +262,37 @@ summary_by_year <- pdriving %>%
   group_by(year_of_observation) %>%
   summarize(avg = mean(total_fatalities_rate))
 
-summary_by_year %>%
-  kbl(caption = "Average of Total Fatalities Rate by Year", 
-      col.names = c("Year", "Average Fatalities Rate"), 
-      longtable = TRUE) %>%
-  kable_styling()
+#summary_table <- summary_by_year %>%
+#  kbl(caption = "Average of Total Fatalities Rate by Year", 
+#      col.names = c("Year", "Average Fatalities Rate"), 
+#      longtable = TRUE) %>%
+#  kable_styling()
 
+summary_graph <- summary_by_year %>%
+ggplot(aes(x = year_of_observation, y = avg)) + 
+  geom_point() +
+    labs(
+    x = "Month",
+    y = "Average Fatality Rate",
+    title = "Average Driving Fatality Rate",
+    color=""
+  ) +
+  theme_classic() +
+  theme(
+  plot.title = element_text(color = "#0099F8",
+                            face = "bold"),
+  axis.title = element_text(color = "#969696",
+                            face = "bold"),
+  axis.text = element_text(color = "#969696"),
+  axis.line = element_line(color = "#969696"),
+  axis.ticks = element_line(color = "#969696")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  theme(
+    axis.text.x = element_text(angle = 55, hjust = 1)
+  )
+
+summary_graph
 ```
-
-
-    
 > The graph above shows the average falities per 100,000 from 1980 to 2004. From the graph we can see that the fatalities decline from 1980 to 1985 before having a few years of increase from 1985 to 1988. The rates than decline from 1988 to 1995 where they appear to stabalize. 
 
 \newpage
@@ -278,7 +301,7 @@ summary_by_year %>%
 
 ## Numeric Value Analysis
 
-> To simplify the analysis, we've removed the weekend and night variables from the EDA and focused only on the total_fatalieis_rate rather than total fatalities or fatalities per 100mil miles. The correlation matrix is presented below:
+> To simplify the analysis, we've removed the weekend and night variables from the EDA and focused only on the total_fatalies_rate rather than total fatalities or fatalities per 100mil miles. The correlation matrix is presented below:
 
 ```{r, fig.width=8}
 data_analysis <- data_cleaned %>%
@@ -290,7 +313,6 @@ correlation_matrix <- round(cor(data_analysis[sapply(data_analysis, is.numeric)]
 ggcorrplot(correlation_matrix, hc.order = TRUE, type="lower", lab=TRUE, lab_size = 3) + 
   labs(title = "Correlation Matrix of Numeric Variables")
 ```
-
 
 > With the total fatalities rate, we can see that there is a positive correlation with unemployment_rate, percent_age_14_24 and vehicle_miles_per_capita, while all of the other variables have a negative correlation. Each of the variables are analyzed in more detail below.
 
@@ -619,7 +641,7 @@ stargazer(mod.exp, title = "Expanded Model", no.space = TRUE, header = FALSE, fo
                              "Factor Variable of Graduate Driver Laws in Effect",
                              "Numeric Variable Percentage of Population aged 14-24",
                              "Numeric Variable Log of Unemployment Rate",
-                             "Numeric Variable Vehicles per Capita"))
+                             "Numeric Variable Vehicle Miles per Capita"))
 ```
 
 - Transformation of variables
@@ -844,8 +866,8 @@ The COVID-19 pandemic dramatically changed patterns of driving. Find data (and i
 # library(fredr)
 # fredr_set_key('f62c7a0a7d2a6882f681e925f1922742')
 # 
-# vehicle_miles_name <- 'TRFVOLUSM227SFWA'
-# population <- 'POPTHM'
+# vehicle_miles_name <- 'VMT'
+# population <- 'POP'
 # time_start = as.Date("2018-01-01")
 # time_end = as.Date("2023-09-01")
 # 
@@ -887,7 +909,7 @@ load("fredr.Rda")
 ```{r compare month-to-month from 2018 to pandemic}
 recent_data <- recent_data %>%
   mutate(
-    miles_per_capita = miles_driven_per_month / pop
+    miles_per_capita = miles_driven_per_month / (pop/1000)
   )
 
 recent_data <- recent_data %>%
@@ -908,7 +930,7 @@ ggplot(data = recent_data) +
   labs(
     x = "Month",
     y = "Percentage Change (%)",
-    title = "Percentage Change in per capita Miles Driven per Month \n to the Same Period in 2018",
+    title = "Percentage Change in per capita Miles Driven per Month \n Compared to the Same Period in 2018",
     color=""
   ) +
   theme_classic() +
@@ -938,9 +960,13 @@ ggplot(data = recent_data) +
   
 Now, use these changes in driving to make forecasts from your models. 
 
-- Suppose that the number of miles driven per capita, increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
+- Suppose that the number of miles driven per capita increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
+
+  > The coefficient coming out of the FE model was for a 12-month average, so in order to use it on monthly data we need to multiply the coefficient by 12 (0.003 -> 0.012). The effect that difference when scaled to an entire year would result in approximtely 0.5 additional traffic fatalities per 100k residents. This is obviously for a single month just prior to the commencement of lockdowns across the US, so if we were to have used this as a predictor in Jan, 20202 we would have drastically overestimated the fatality rate. This has financial implications as, if these forecasts are used for planning purposes, they could result in a singificant misallocation of resources (first responders/insurance/etc.).
 
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
+
+  > Modifying the FE coefficient as decsribed above, the effect of that drop in miles driven when scaled to an entire year would result in approximtely 3.6 fewer traffic fatalities per 100k residents. The difficulty with this estimate is that it assumes that driving rates will remain that low for a 12 month period which we know is not the case. 
 
 # (5 points) Evaluate Error 
 
