@@ -303,7 +303,7 @@ summary_graph
 
 > To simplify the analysis, we've removed the weekend and night variables from the EDA and focused only on the total_fatalies_rate rather than total fatalities or fatalities per 100 mil miles. The correlation matrix is presented below:
 
-```{r, fig.width=8}
+```{r, fig.width=8, fig.height=8, echo=FALSE}
 data_analysis <- data_cleaned %>%
   dplyr::select(-c("total_fatalities", "night_fatalities", "weekend_fatalities",
             "total_fatalities_per_100mil_miles", "night_fatalities_per_100mil_miles", "weekend_fatalities_per_100mil_miles",
