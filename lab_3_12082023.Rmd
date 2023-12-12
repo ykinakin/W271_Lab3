@@ -52,7 +52,7 @@ data_cleaned <- data %>%
                                  slnone > 0.5 ~ NA)) #Higher than 0.5 as NA
 
 data_cleaned <- data_cleaned %>%
-  select(-c("sl55", "sl65", "sl70", "sl75", "slnone")) #Drop columns
+  dplyr::select(-c("sl55", "sl65", "sl70", "sl75", "slnone")) #Drop columns
 
 data_cleaned$speed_limit <- as.numeric(data_cleaned$speed_limit) #sets to numeric
 ```
@@ -62,7 +62,7 @@ data_cleaned$speed_limit <- as.numeric(data_cleaned$speed_limit) #sets to numeri
     
 ```{r re-encode year}
 data_cleaned <- data_cleaned %>% 
-       rename("year_of_observation" = "year") #sets year as year_of_observation
+       dplyr::rename("year_of_observation" = "year") #sets year as year_of_observation
 
 data_cleaned <- data_cleaned[-c(which(colnames(data_cleaned)=="d80"):which(colnames(data_cleaned)=="d04"))] #deletes columns
 
@@ -78,7 +78,7 @@ data_cleaned <- data_cleaned %>%
                                          TRUE ~ 'None')) #Remainder are none
 
 data_cleaned <- data_cleaned %>%
-  select(-c("bac08", "bac10")) #drops columns
+  dplyr::select(-c("bac08", "bac10")) #drops columns
 
 data_cleaned$blood_alcohol_level <- as.factor(data_cleaned$blood_alcohol_level) #sets as a factor
 ```
@@ -111,7 +111,7 @@ col_name_lookup <- c(
   )
 
 data_cleaned <- data_cleaned %>% 
-  rename(any_of(col_name_lookup))
+  dplyr::rename(any_of(col_name_lookup))
 ```
 
 ```{r}
@@ -237,7 +237,7 @@ data_cleaned$blood_alcohol_level <- as.factor(data_cleaned$blood_alcohol_level)
 
 > *Is the data that is presented a sample from the population, or is it a census that represents the entire population?*
 
-> The data was collected by the Fatality Analysis Reporting System (FARS) which is administered by the U.S. Department of Transportation, National Highway Traffic Safety Administrtaion. These are not voluntary survey data, but are rather sourced either directly from census or compiled by researchers or government agencies from publicly available information. They should therefore be interpreted as census data that represent the entire population. . 
+> The data was collected by the Fatality Analysis Reporting System (FARS) which is administered by the U.S. Department of Transportation, National Highway Traffic Safety Administrtaion. These are not voluntary survey data, but are rather sourced either directly from census or compiled by researchers or government agencies from publicly available information. They should therefore be interpreted as census data that represent the entire population. 
 
 > *How is the dependent variable of interest defined*
 
@@ -258,9 +258,9 @@ data_cleaned$blood_alcohol_level <- as.factor(data_cleaned$blood_alcohol_level)
     
 ```{r}
 summary_by_year <- pdriving %>%
-  select(year_of_observation, total_fatalities_rate) %>%
+  dplyr::select(year_of_observation, total_fatalities_rate) %>%
   group_by(year_of_observation) %>%
-  summarize(avg = mean(total_fatalities_rate))
+  dplyr::summarize(avg = mean(total_fatalities_rate))
 
 #summary_table <- summary_by_year %>%
 #  kbl(caption = "Average of Total Fatalities Rate by Year", 
@@ -293,7 +293,7 @@ ggplot(aes(x = year_of_observation, y = avg)) +
 
 summary_graph
 ```
-> The graph above shows the average falities per 100,000 from 1980 to 2004. From the graph we can see that the fatalities decline from 1980 to 1985 before having a few years of increase from 1985 to 1988. The rates than decline from 1988 to 1995 where they appear to stabalize. 
+> The graph above shows the average falities per 100,000 residents from 1980 to 2004. From the graph we can see that the fatalities decline from 1980 to 1985 before having a few years of increase from 1985 to 1988. The rate then declines from 1988 to 1992 where it appears to stabilize. 
 
 \newpage
 
@@ -301,11 +301,11 @@ summary_graph
 
 ## Numeric Value Analysis
 
-> To simplify the analysis, we've removed the weekend and night variables from the EDA and focused only on the total_fatalies_rate rather than total fatalities or fatalities per 100mil miles. The correlation matrix is presented below:
+> To simplify the analysis, we've removed the weekend and night variables from the EDA and focused only on the total_fatalies_rate rather than total fatalities or fatalities per 100 mil miles. The correlation matrix is presented below:
 
 ```{r, fig.width=8}
 data_analysis <- data_cleaned %>%
-  select(-c("total_fatalities", "night_fatalities", "weekend_fatalities",
+  dplyr::select(-c("total_fatalities", "night_fatalities", "weekend_fatalities",
             "total_fatalities_per_100mil_miles", "night_fatalities_per_100mil_miles", "weekend_fatalities_per_100mil_miles",
             "night_fatalities_rate", "weekend_fatalities_rate"))
 
@@ -314,7 +314,7 @@ ggcorrplot(correlation_matrix, hc.order = TRUE, type="lower", lab=TRUE, lab_size
   labs(title = "Correlation Matrix of Numeric Variables")
 ```
 
-> With the total fatalities rate, we can see that there is a positive correlation with unemployment_rate, percent_age_14_24 and vehicle_miles_per_capita, while all of the other variables have a negative correlation. None of the correlation coefficients is above 0.5, so these covariation between the fatality rates and the other variables is not particularly high. It is important to also note the high value between vehicle miles driven and state population (0.97) as the high covariance has a potential to skew model results. Counterintuitively, there appears to be no corrlation bewteen speed limit values and the total fatality rate.
+> With the total fatalities rate, we can see that there is a positive correlation with unemployment_rate, percent_age_14_24 and vehicle_miles_per_capita, while all of the other variables (except speed limit) have a negative correlation. None of the correlation coefficients is above 0.5, so these covariation between the fatality rates and the other variables is not particularly high. It is important to also note the high value between vehicle miles driven and state population (0.97) as the high covariance has a potential to skew model results. Counterintuitively, there appears to be no corrlation bewteen speed limit values and the total fatality rate.
 
 ```{r, fig.width=8}
 library(GGally)
@@ -508,15 +508,15 @@ stargazer(mod.prel, title = "Preliminary Model", no.space = TRUE, header = FALSE
                              "Dummy Variable 2003",
                              "Dummy Variable 2004"))
 ```
-> Each of the dummay variables are statistically significant. 
+> Each of the dummy variables are statistically significant except that of 1981. 
 
 - Why is fitting a linear model a sensible starting place?
 
-> A linear model is always a sensible place to start as they are generally the most parsimoneous and easily explainable models. For this dataset in particular, in the EDA we have already identified some areas in which there appear to be linear relationships, therefore, it's entirely appropriate to start with linear methods in the modelling process. 
+> A linear model is always a sensible place to start as they are generally the most parsimonious and easily explainable models. For this dataset in particular, in the EDA we have already identified some areas in which there appear to be linear relationships, therefore, it's entirely appropriate to start with linear methods in the modelling process. 
 
 - What does this model explain, and what do you find in this model? 
 
-> The linear model is above is only a function of year. Where each year is predicting the average in that particularly. As we can see, that as year increases there is a slight deline in the total fatalities rate, and eventually begins to stabalize. This can be visualized in the graph below. 
+> The linear model is above is only a function of year, where each year is predicting the average in that particularly. As we can see, that as year increases there is a slight deline in the total fatalities rate, and eventually begins to stabalize. This can be visualized in the graph below. 
 
 ```{r Preliminary Model Plot, echo=FALSE}
 #data formatting
@@ -576,12 +576,12 @@ pdwtest(mod.prel)
 
 - Did driving become safer over this period? Please provide a detailed explanation.
 
-> While the overall fatalities rate has generally declined, we can't say that driving has become safer over the period, as we can see see a significant variance in the results versus the projection. There may be missing variables that are causing the decrease in fatalities.
+> The overall fatalities rate has declined over the years, and this is also shown by the model co-efficients getting more negative over the years, with high significance. Therefore, it seems that driving has become safer over the period, but we can see see a significant variance in the results versus the projection. There may be missing variables that are causing the decrease in fatalities.
 
 - What, if any, are the limitation of this model. In answering this, please consider **at least**: 
     - Are the parameter estimates reliable, unbiased estimates of the truth? Or, are they biased due to the way that the data is structured?
     
-    > The only variable is for year, which is not necessarily unbiased estimator of the truth. There is omitted variable risk, and we need to explore alternative models which may be better predictors of total fatalities than just time alone. 
+    > The only variable is for year, which is not necessarily unbiased estimator of the truth. There is omitted variable risk, and we need to explore alternative models which may be better predictors of total fatalities than just time alone. For example, in our EDA we saw that there does appear to be differences in the rates over time in different states. As well, the model assumes homoskedasticity and no serial correlation, but our tests indicate we reject the null for both.
     
     - Are the uncertainty estimate reliable, unbiased estimates of sampling based variability? Or, are they biased due to the way that the data is structured? 
     
@@ -655,12 +655,12 @@ stargazer(mod.exp, title = "Expanded Model", no.space = TRUE, header = FALSE, fo
 
 - Transformation of variables
 
-> For the variables within this model, we have made the following transformations:
+> As discussed in the EDA, for the variables within this model, we have made the following transformations:
 
-> - Due to the skew on the results for unemployment rate, we've applied a log tranformation to bring the model more towards normal disrtibution.
-> - For each factor variable we've set values below 0.5 as zero and above 0.5 as one. This only impacts years when there were changes in laws, which were relately few. This change was made to increase interpretability and to have more parsimoneous models.
+> - Due to the skew on the results for unemployment rate, we've applied a log transformation to bring the model more towards normal distribution.
+> - For each factor variable we've set values below 0.5 as zero and above 0.5 as one. This only impacts years when there were changes in laws, which were relatively few. This change was made to increase interpretability and to have more parsimonious models.
 
-> While note included in our model, we would also suggest logging state population and vehicle miles (note: different than vehicle miles per capita) as there was also a skew in their data.
+> Note: if we were including them in the model, we would also suggest logging state population and vehicle miles (different than vehicle miles per capita) as there was also a skew in their data.
 
 - How are the blood alcohol variables defined? Interpret the coefficients that you estimate for this concept. 
 
@@ -705,7 +705,7 @@ Re-estimate the **Expanded Model** using fixed effects at the state level.
 
 ```{r Fixed Effect Model, warning=FALSE}
 mod.fix <- plm(
-  formula = total_fatalities_rate ~ state + year_of_observation + #Do we even need to put state in here?
+  formula = total_fatalities_rate ~ year_of_observation + 
     blood_alcohol_level + per_se_law + primary_seatbelt +
     secondary_seatbelt + speed_limit_70_or_higher + grad_driver_law +
     percent_age_14_24 + unemployment_rate + vehicle_miles_per_capita,
@@ -787,7 +787,7 @@ stargazer(mod.fix, title = "Fixed Effect Model", no.space = TRUE, header = FALSE
 
 > Note the secondary seatbelt is not statistically significant for either model, and the primary seatbelt is only significant in the fixed effect model.
 
-> Here we can see that by implementing seatbelt laws there is a decrease in the total fatality rate, which is more consistent with our natural understanding.
+> Here we can see that by implementing seatbelt laws there is a decrease in the total fatality rate, which is consistent with our natural understanding.
 
 Which set of estimates do you think is more reliable? Why do you think this? 
 
@@ -817,9 +817,9 @@ pFtest(mod.fix, mod.exp)
   
 - Are these assumptions reasonable in the current context?
 
-  > We believe that the model is linear within it's parameters, as we are able to estimate the model with a linear equation. We also believe that the data is i.i.d. in respect to the observations across individuals due to the robust data collection methodology. When we analyze the results of the models, we don't see any variables with zero variance which helps us to assume that the identifiability assumption is met. 
+  > We believe that the model is linear within it's parameters, as we are able to estimate the model with a linear equation. We also believe that the data is i.i.d. in respect to the observations across individuals due to the robust data collection methodology. When we analyze the results of the models, we don't see any variables with zero variance which helps us to assume that the identifiability assumption is met. However, as mentioned earlier, for the expanded pooled model, there is likely omitted variable bias especially and the F test confirms this in favor of the fixed effect model. 
 
-  > We also run the Breusch-Pagam LM test for heteroskedasticity, where we reject the null hypothesis of homoskedasticity win the model as the p-value is below 0.05.
+  > We also run the Breusch-Pagam LM test for heteroskedasticity for the fixed effect model, where we reject the null hypothesis of homoskedasticity win the model as the p-value is below 0.05.
 
 ```{r}
 pcdtest(mod.fix, test="lm")
@@ -865,54 +865,54 @@ phtest(mod.fix, mod.random)
 
 - If the assumptions are **not** met, then do not estimate the data. But, also comment on what the consequences would be if you were to *inappropriately* estimate a random effects model. Would your coefficient estimates be biased or not? Would your standard error estimates be biased or not? Or, would there be some other problem that might arise?
 
-> Using a random effect model inappropriately could impact the validity of the model as the assumptions are not satisfied. The random effect model removes the time varying impact, and would only be showing the overall cofficient averages which doesn't tell us anything about how the variables change over time. 
+> Using a random effect model inappropriately could impact the validity of the model as the assumptions are not satisfied. The random effect model removes the time varying impact, and would only be showing the overall coefficient averages which doesn't tell us anything about how the variables change over time. As well, having correlation between residuals and predictors would mean the standard error estimates would be biased.
 
 # (10 points) Model Forecasts 
 
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
 
 ``` {r pull data from FRED}
-# library(fredr)
-# fredr_set_key('f62c7a0a7d2a6882f681e925f1922742')
-# 
-# vehicle_miles_name <- 'VMT'
-# population <- 'POP'
-# time_start = as.Date("2018-01-01")
-# time_end = as.Date("2023-09-01")
-# 
-# recent_driving_data <- fredr(
-#   series_id = vehicle_miles_name,
-#   observation_start = time_start,
-#   observation_end = time_end
-#   ) %>%
-#    select(
-#      date,
-#      value
-#    ) %>%
-#    rename(
-#      "miles_driven_per_month" = value
-#    )
-# 
-# recent_population_data <- fredr(
-#    series_id = population,
-#    observation_start = time_start,
-#    observation_end = time_end
-#    ) %>%
-#    select(
-#      date,
-#      value
-#    ) %>%
-#    rename(
-#      "pop" = value
-#    )
-# 
-# recent_data = merge(recent_driving_data, recent_population_data)
-# 
+library(fredr)
+fredr_set_key('f62c7a0a7d2a6882f681e925f1922742')
+
+vehicle_miles_name <- 'VMT'
+population <- 'POP'
+time_start = as.Date("2018-01-01")
+time_end = as.Date("2023-09-01")
+
+recent_driving_data <- fredr(
+  series_id = vehicle_miles_name,
+  observation_start = time_start,
+  observation_end = time_end
+  ) %>%
+   dplyr::select(
+     date,
+     value
+   ) %>%
+   dplyr::rename(
+     "miles_driven_per_month" = value
+   )
+
+recent_population_data <- fredr(
+   series_id = population,
+   observation_start = time_start,
+   observation_end = time_end
+   ) %>%
+   dplyr::select(
+     date,
+     value
+   ) %>%
+   dplyr::rename(
+     "pop" = value
+   )
+
+recent_data = merge(recent_driving_data, recent_population_data)
+
 # save(recent_data, file = "fredr.Rda")
 ```
 
 ``` {r load saved data from FRED}
-load("fredr.Rda")
+# load("fredr.Rda")
 ```
 
 ```{r compare month-to-month from 2018 to pandemic}
@@ -980,6 +980,8 @@ Now, use these changes in driving to make forecasts from your models.
 # (5 points) Evaluate Error 
 
 If there were serial correlation or heteroskedasticity in the idiosyncratic errors of the model, what would be the consequences on the estimators and their standard errors? Is there any serial correlation or heteroskedasticity? 
+
+> If there was serial correlation or heteroskedasticity, the estimators may be biased or inefficient and the standard errors may be incorrectly estimated.
 
 ```{r Best Model tests, echo = FALSE, results = 'latex'}
 pcdtest(mod.fix, test ='lm')
