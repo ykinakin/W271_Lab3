@@ -872,47 +872,47 @@ phtest(mod.fix, mod.random)
 The COVID-19 pandemic dramatically changed patterns of driving. Find data (and include this data in your analysis, here) that includes some measure of vehicle miles driven in the US. Your data should at least cover the period from January 2018 to as current as possible. With this data, produce the following statements: 
 
 ``` {r pull data from FRED}
-library(fredr)
-fredr_set_key('f62c7a0a7d2a6882f681e925f1922742')
-
-vehicle_miles_name <- 'VMT'
-population <- 'POP'
-time_start = as.Date("2018-01-01")
-time_end = as.Date("2023-09-01")
-
-recent_driving_data <- fredr(
-  series_id = vehicle_miles_name,
-  observation_start = time_start,
-  observation_end = time_end
-  ) %>%
-   dplyr::select(
-     date,
-     value
-   ) %>%
-   dplyr::rename(
-     "miles_driven_per_month" = value
-   )
-
-recent_population_data <- fredr(
-   series_id = population,
-   observation_start = time_start,
-   observation_end = time_end
-   ) %>%
-   dplyr::select(
-     date,
-     value
-   ) %>%
-   dplyr::rename(
-     "pop" = value
-   )
-
-recent_data = merge(recent_driving_data, recent_population_data)
+# library(fredr)
+# fredr_set_key('f62c7a0a7d2a6882f681e925f1922742')
+# 
+# vehicle_miles_name <- 'VMT'
+# population <- 'POP'
+# time_start = as.Date("2018-01-01")
+# time_end = as.Date("2023-09-01")
+# 
+# recent_driving_data <- fredr(
+#   series_id = vehicle_miles_name,
+#   observation_start = time_start,
+#   observation_end = time_end
+#   ) %>%
+#    dplyr::select(
+#      date,
+#      value
+#    ) %>%
+#    dplyr::rename(
+#      "miles_driven_per_month" = value
+#    )
+# 
+# recent_population_data <- fredr(
+#    series_id = population,
+#    observation_start = time_start,
+#    observation_end = time_end
+#    ) %>%
+#    dplyr::select(
+#      date,
+#      value
+#    ) %>%
+#    dplyr::rename(
+#      "pop" = value
+#    )
+# 
+# recent_data = merge(recent_driving_data, recent_population_data)
 
 # save(recent_data, file = "fredr.Rda")
 ```
 
 ``` {r load saved data from FRED}
-# load("fredr.Rda")
+load("fredr.Rda")
 ```
 
 ```{r compare month-to-month from 2018 to pandemic}
@@ -923,7 +923,7 @@ recent_data <- recent_data %>%
 
 recent_data <- recent_data %>%
   mutate(
-    difference = (miles_per_capita - recent_data[month(recent_data$date) == month(date) & year(recent_data$date) == 2018,][['miles_per_capita']]) / recent_data[month(recent_data$date) == month(date) & year(recent_data$date) == 2018,][['miles_per_capita']]
+    difference = (miles_per_capita - recent_data[month(recent_data$date) == month(date) & year(recent_data$date) == 2018,][['miles_per_capita']]) / recent_data[month(recent_data$date) == month(date) & year(recent_data$date) == 2018,][['miles_per_capita']] * 100
       )
 
 max_month = c(as.numeric(recent_data[which.max(recent_data$difference),][['date']]), as.numeric(recent_data[which.max(recent_data$difference),][['difference']]))
@@ -971,11 +971,11 @@ Now, use these changes in driving to make forecasts from your models.
 
 - Suppose that the number of miles driven per capita increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 
-  > The coefficient coming out of the FE model was for a 12-month average, so in order to use it on monthly data we need to multiply the coefficient by 12 (0.003 -> 0.012). The effect that difference when scaled to an entire year would result in approximtely 0.5 additional traffic fatalities per 100k residents. This is obviously for a single month just prior to the commencement of lockdowns across the US, so if we were to have used this as a predictor in Jan, 20202 we would have drastically overestimated the fatality rate. This has financial implications as, if these forecasts are used for planning purposes, they could result in a singificant misallocation of resources (first responders/insurance/etc.).
+  > The coefficients of the FE model were derived on annual data so in order to apply these to monthly data we need to multiply the chnage in monthly per capita miles driven by 12. As such, the increase of 41.6 per capita miles driven (between Jan 2018 and Jan 2020) scales us up a deficit of approximately 500 miles on an annualized basis. The effect that difference when scaled to an entire year would result in approximtely 0.47 additional traffic fatalities per 100k residents. This is obviously for a single month just prior to the commencement of lockdowns across the US, so if we were to have used this as a predictor in Jan, 20202 we would have drastically overestimated the fatality rate. This has financial implications as, if these forecasts are used for planning purposes, they could result in a singificant misallocation of resources (first responders/insurance/etc.).
 
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 
-  > Modifying the FE coefficient as decsribed above, the effect of that drop in miles driven when scaled to an entire year would result in approximtely 3.6 fewer traffic fatalities per 100k residents. The difficulty with this estimate is that it assumes that driving rates will remain that low for a 12 month period. 
+  > As before, the coefficients of the FE model were derived on annual data so in order to apply these to monthly data we need to multiply the chnage in monthly per capita miles driven by 12. The monthly negative difference of 337.3 per capita miles driven (between April 2018 and April 2020) scales up to a deficit of 4,048 miles on an annualized basis. Mutliplying by the FE coefficient of 9.319782e-04, we would expect a reduction of approximately 3.8 in the fatality rate. This drop in the amount vehicle miles is an extreme outlier and is well outside of the standard variance in this variable, meaning that we cannot blindly apply the model coefficients to predict the impact of such an extreme effect. 
 
 # (5 points) Evaluate Error 
 
