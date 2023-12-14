@@ -297,6 +297,36 @@ summary_graph
 
 \newpage
 
+> Taking advantage of the panel data nature of the data, we can look at the fatality rate by state over time. In this we can see that, with the notable exception of New Mexico, per capita driving fatality rates across all the lower 48 states have either remained flat or are decreasing between 1980 and 2004.
+
+``` {r panel by state, fig.width = 8, fig.height = 11}
+ggplot(data = data_cleaned, aes(x = year_of_observation, y = total_fatalities_rate, group = state)) +
+  geom_line() + 
+  geom_point() +
+  facet_wrap(~ state) +
+    labs(
+    x = "Month",
+    y = "Average Fatality Rate",
+    title = "Annual per capite Driving Fatality Rate by State",
+    color=""
+  ) +
+  theme_classic() +
+  theme(
+  plot.title = element_text(color = "#0099F8",
+                            face = "bold"),
+  axis.title = element_text(color = "#969696",
+                            face = "bold"),
+  axis.text = element_text(color = "#969696"),
+  axis.line = element_line(color = "#969696"),
+  axis.ticks = element_line(color = "#969696")) +
+  scale_x_discrete(breaks = scales::pretty_breaks(n = 4)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  theme(
+    axis.text.x = element_text(angle = 55, hjust = 1)
+  )
+
+```
+
 - Full Exploratory Data Analysis
 
 ## Numeric Value Analysis
@@ -315,13 +345,6 @@ ggcorrplot(correlation_matrix, hc.order = TRUE, type="lower", lab=TRUE, lab_size
 ```
 
 > With the total fatalities rate, we can see that there is a positive correlation with unemployment_rate, percent_age_14_24 and vehicle_miles_per_capita, while all of the other variables (except speed limit) have a negative correlation. None of the correlation coefficients is above 0.5, so these covariation between the fatality rates and the other variables is not particularly high. It is important to also note the high value between vehicle miles driven and state population (0.97) as the high covariance has a potential to skew model results. Counterintuitively, there appears to be no corrlation bewteen speed limit values and the total fatality rate.
-
-```{r, fig.width=8}
-library(GGally)
-ggpairs(data_analysis[sapply(data_analysis, is.numeric)])
-```
-
-> Looking at the pair plots for the numeric variables, we can see that speed limit and minimum drinking age appear to be distributed more as factor variables than numeric variables. The pair-plot from the rest of the variables show a decent range in variation. The high correlation between vehicle mileage and state population doesn't appear to be perfect, so any issues with perfect colinearity are not likely to arise.
 
 > Each of the dependent variables are analyzed in more detail below. 
 
