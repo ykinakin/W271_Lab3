@@ -1370,7 +1370,7 @@ stargazer(mod.fix, title = "Fixed Effect Model", no.space = TRUE, header = FALSE
                              "Factor Variable of Graduate Driver Laws in Effect",
                              "Numeric Variable Percentage of Population aged 14-24",
                              "Numeric Variable Log of Unemployment Rate",
-                             "Numeric Variable Vehicles per Capita"))
+                             "Numeric Variable Vehicle Miles per Capita"))
 ```
 
 
@@ -1591,11 +1591,11 @@ Now, use these changes in driving to make forecasts from your models.
 
 - Suppose that the number of miles driven per capita increased by as much as the COVID boom. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 
-  > The coefficients of the FE model were derived on annual data so in order to apply these to monthly data we need to multiply the chnage in monthly per capita miles driven by 12. As such, the increase of 41.6 per capita miles driven (between Jan 2018 and Jan 2020) scales us up a deficit of approximately 500 miles on an annualized basis. The effect that difference when scaled to an entire year would result in approximtely 0.47 additional traffic fatalities per 100k residents. This is obviously for a single month just prior to the commencement of lockdowns across the US, so if we were to have used this as a predictor in Jan, 20202 we would have drastically overestimated the fatality rate. This has financial implications as, if these forecasts are used for planning purposes, they could result in a singificant misallocation of resources (first responders/insurance/etc.).
+  > The coefficients of the FE model were derived on annual data so in order to apply these to monthly data we need to multiply the change in monthly per capita miles driven by 12. As such, the increase of 41.6 per capita miles driven (comparing Jan 2018 and Jan 2020) scales to an increase of approximately 500 miles on an annualized basis. The effect that difference when scaled to an entire year would result in approximately 0.47 additional traffic fatalities per 100k residents (using the FE coefficient of 9.319782e-04 for Vehicle Miles per capita). This is based on a single month just prior to the commencement of lockdowns across the US, so if we were to have used this as a predictor in Jan 2020 we would have drastically overestimated the fatality rate for the year. This has financial implications as, if these forecasts are used for planning purposes, they could result in a significant misallocation of resources (first responders/insurance/etc.).
 
 - Suppose that the number of miles driven per capita, decreased by as much as the COVID bust. Using the FE estimates, what would the consequences be on the number of traffic fatalities? Please interpret the estimate.
 
-  > As before, the coefficients of the FE model were derived on annual data so in order to apply these to monthly data we need to multiply the chnage in monthly per capita miles driven by 12. The monthly negative difference of 337.3 per capita miles driven (between April 2018 and April 2020) scales up to a deficit of 4,048 miles on an annualized basis. Mutliplying by the FE coefficient of 9.319782e-04, we would expect a reduction of approximately 3.8 in the fatality rate. This drop in the amount vehicle miles is an extreme outlier and is well outside of the standard variance in this variable, meaning that we cannot blindly apply the model coefficients to predict the impact of such an extreme effect. 
+  > As before, the coefficients of the FE model were derived on annual data so in order to apply these to monthly data we need to multiply the chnage in monthly per capita miles driven by 12. The monthly negative difference of 337.3 per capita miles driven (comparing April 2018 and April 2020) scales to a deficit of 4,048 miles on an annualized basis. Mutliplying by the FE coefficient of 9.319782e-04, we would expect a reduction of approximately 3.8 in the fatality rate. This drop in the amount of vehicle miles is an extreme outlier and is well outside of the standard variance in this variable, meaning that we cannot blindly apply the model coefficients to predict the impact of such an extreme effect. 
 
 # (5 points) Evaluate Error 
 
